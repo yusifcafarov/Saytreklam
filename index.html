@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AURA Studio — Memarlıq & İnteryer Dizayn</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Montserrat:wght@200;300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --gold: #D4AF37;
+      --gold-light: #e8cc6a;
+      --charcoal: #0d0d0d;
+      --charcoal-mid: #141414;
+      --charcoal-soft: #1c1c1c;
+      --off-white: #f0ede8;
+      --muted: #888;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: var(--charcoal);
+      color: var(--off-white);
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* ── CUSTOM CURSOR ── */
+    #cursor-dot {
+      width: 6px; height: 6px;
+      background: var(--gold);
+      border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.08s ease;
+    }
+    #cursor-ring {
+      width: 36px; height: 36px;
+      border: 1px solid rgba(212,175,55,0.5);
+      border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: all 0.25s cubic-bezier(0.23,1,0.32,1);
+    }
+    body:has(a:hover) #cursor-ring,
+    body:has(button:hover) #cursor-ring {
+      width: 56px; height: 56px;
+      border-color: var(--gold);
+      background: rgba(212,175,55,0.06);
+    }
+
+    /* ── PRELOADER ── */
+    #preloader {
+      position: fixed; inset: 0;
+      background: #050505;
+      z-index: 10000;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      transition: opacity 0.9s cubic-bezier(0.76,0,0.24,1), visibility 0.9s;
+    }
+    #preloader.hide { opacity: 0; visibility: hidden; }
+
+    .pre-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(3rem, 8vw, 6rem);
+      font-weight: 300;
+      letter-spacing: 0.5em;
+      color: transparent;
+      -webkit-text-stroke: 1px var(--gold);
+      position: relative;
+      overflow: hidden;
+    }
+    .pre-logo::after {
+      content: attr(data-text);
+      position: absolute; inset: 0;
+      color: var(--gold);
+      clip-path: inset(0 100% 0 0);
+      animation: reveal-text 2s cubic-bezier(0.76,0,0.24,1) 0.3s forwards;
+    }
+    @keyframes reveal-text {
+      to { clip-path: inset(0 0% 0 0); }
+    }
+
+    .pre-line {
+      width: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      margin-top: 1.5rem;
+      animation: expand-line 1.5s cubic-bezier(0.76,0,0.24,1) 0.5s forwards;
+    }
+    @keyframes expand-line { to { width: 200px; } }
+
+    .pre-sub {
+      font-size: 0.6rem;
+      letter-spacing: 0.4em;
+      color: var(--gold);
+      margin-top: 1rem;
+      opacity: 0;
+      animation: fade-up 1s ease 1.2s forwards;
+      text-transform: uppercase;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: #050505; }
+    ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 1; opacity: 0.4;
+    }
+
+    /* ── HEADER ── */
+    #header {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 2rem 3rem;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: background 0.5s, padding 0.5s, backdrop-filter 0.5s;
+    }
+    #header.scrolled {
+      background: rgba(5,5,5,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 1.2rem 3rem;
+      border-bottom: 1px solid rgba(212,175,55,0.12);
+    }
+
+    .logo-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.8rem;
+      font-weight: 300;
+      letter-spacing: 0.45em;
+      color: var(--off-white);
+      text-decoration: none;
+      position: relative;
+    }
+    .logo-text span { color: var(--gold); }
+
+    nav a {
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(240,237,232,0.65);
+      text-decoration: none;
+      position: relative;
+      padding-bottom: 4px;
+      transition: color 0.3s;
+    }
+    nav a::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0;
+      width: 0; height: 1px;
+      background: var(--gold);
+      transition: width 0.4s cubic-bezier(0.76,0,0.24,1);
+    }
+    nav a:hover { color: var(--off-white); }
+    nav a:hover::after { width: 100%; }
+
+    /* ── HERO ── */
+    #hero {
+      height: 100vh;
+      position: relative;
+      overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background-image: url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1800&q=80');
+      background-size: cover;
+      background-position: center;
+      transform: scale(1.08);
+      animation: hero-zoom 12s ease-out forwards;
+    }
+    @keyframes hero-zoom { to { transform: scale(1); } }
+    .hero-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(5,5,5,0.45) 0%,
+        rgba(5,5,5,0.2) 40%,
+        rgba(5,5,5,0.65) 100%
+      );
+    }
+    .hero-content {
+      position: relative; z-index: 2;
+      text-align: center;
+      padding: 0 1.5rem;
+    }
+    .hero-eyebrow {
+      font-size: 0.6rem;
+      letter-spacing: 0.5em;
+      color: var(--gold);
+      text-transform: uppercase;
+      opacity: 0;
+      animation: fade-up 1s ease 0.5s forwards;
+      display: block; margin-bottom: 1.8rem;
+    }
+    .hero-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(3.5rem, 8vw, 8rem);
+      font-weight: 300;
+      line-height: 1.05;
+      color: var(--off-white);
+      opacity: 0;
+      animation: fade-up 1.2s ease 0.8s forwards;
+    }
+    .hero-title em {
+      font-style: italic;
+      color: var(--gold);
+    }
+    .hero-divider {
+      width: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      margin: 2.5rem auto;
+      animation: expand-line 1.5s ease 1.5s forwards;
+    }
+    .hero-sub {
+      font-size: 0.7rem;
+      letter-spacing: 0.35em;
+      color: rgba(240,237,232,0.7);
+      opacity: 0;
+      animation: fade-up 1s ease 1.8s forwards;
+      text-transform: uppercase;
+      margin-bottom: 3rem;
+    }
+    .btn-gold {
+      display: inline-block;
+      font-size: 0.6rem;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: var(--gold);
+      border: 1px solid rgba(212,175,55,0.5);
+      padding: 1.1rem 2.8rem;
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      animation: fade-up 1s ease 2.1s forwards;
+      transition: color 0.4s;
+    }
+    .btn-gold::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: var(--gold);
+      transform: translateX(-101%);
+      transition: transform 0.5s cubic-bezier(0.76,0,0.24,1);
+      z-index: -1;
+    }
+    .btn-gold:hover { color: var(--charcoal); }
+    .btn-gold:hover::before { transform: translateX(0); }
+
+    .scroll-indicator {
+      position: absolute; bottom: 2.5rem; left: 50%;
+      transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+      opacity: 0;
+      animation: fade-up 1s ease 2.5s forwards;
+      z-index: 2;
+    }
+    .scroll-indicator span {
+      font-size: 0.5rem; letter-spacing: 0.3em;
+      color: rgba(212,175,55,0.7); text-transform: uppercase;
+    }
+    .scroll-line {
+      width: 1px; height: 60px;
+      background: linear-gradient(to bottom, var(--gold), transparent);
+      animation: scroll-pulse 2s ease-in-out infinite 3s;
+    }
+    @keyframes scroll-pulse {
+      0%, 100% { transform: scaleY(1); opacity: 1; }
+      50% { transform: scaleY(0.6); opacity: 0.4; }
+    }
+
+    /* ── SHARED ANIMATIONS ── */
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes fade-left {
+      from { opacity: 0; transform: translateX(50px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes fade-right {
+      from { opacity: 0; transform: translateX(-50px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ── SECTION REVEAL ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(50px);
+      transition: opacity 0.9s cubic-bezier(0.16,1,0.3,1), transform 0.9s cubic-bezier(0.16,1,0.3,1);
+    }
+    .reveal.from-left {
+      transform: translateX(-50px);
+    }
+    .reveal.from-right {
+      transform: translateX(50px);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translate(0);
+    }
+
+    /* ── SECTIONS ── */
+    .section-label {
+      font-size: 0.55rem;
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
+      color: var(--gold);
+      display: flex; align-items: center; gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .section-label::before {
+      content: '';
+      display: block; width: 40px; height: 1px;
+      background: var(--gold);
+    }
+
+    .section-heading {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      font-weight: 300;
+      line-height: 1.1;
+      color: var(--off-white);
+    }
+    .section-heading em { font-style: italic; color: var(--gold); }
+
+    /* ── ABOUT ── */
+    #about { background: var(--charcoal-mid); }
+    .about-stat {
+      border-top: 1px solid rgba(212,175,55,0.2);
+      padding-top: 1.5rem;
+    }
+    .stat-number {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 3rem;
+      font-weight: 300;
+      color: var(--gold);
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 0.58rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 0.3rem;
+    }
+
+    /* ── PORTFOLIO ── */
+    #portfolio { background: var(--charcoal); }
+    .portfolio-card {
+      position: relative;
+      overflow: hidden;
+      cursor: none;
+    }
+    .portfolio-card img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transition: transform 0.9s cubic-bezier(0.16,1,0.3,1), filter 0.9s ease;
+      filter: brightness(0.75) saturate(0.8);
+    }
+    .portfolio-card:hover img {
+      transform: scale(1.07);
+      filter: brightness(0.6) saturate(1);
+    }
+    .portfolio-card-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(5,5,5,0.9) 0%, transparent 55%);
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 2.5rem;
+      transition: background 0.5s;
+    }
+    .portfolio-card:hover .portfolio-card-overlay {
+      background: linear-gradient(to top, rgba(5,5,5,0.95) 0%, rgba(5,5,5,0.3) 55%);
+    }
+    .card-cat {
+      font-size: 0.52rem;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.6rem;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.5s 0.05s, transform 0.5s 0.05s;
+    }
+    .card-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.8rem;
+      font-weight: 300;
+      color: var(--off-white);
+      line-height: 1.2;
+      transform: translateY(6px);
+      transition: transform 0.5s;
+    }
+    .card-arrow {
+      margin-top: 1rem;
+      display: flex; align-items: center; gap: 0.7rem;
+      font-size: 0.55rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.5s 0.1s, transform 0.5s 0.1s;
+    }
+    .card-arrow::after {
+      content: '';
+      display: block; flex: 1;
+      height: 1px;
+      background: var(--gold);
+      max-width: 40px;
+    }
+    .portfolio-card:hover .card-cat,
+    .portfolio-card:hover .card-arrow { opacity: 1; transform: translateY(0); }
+    .portfolio-card:hover .card-title { transform: translateY(0); }
+
+    .portfolio-number {
+      position: absolute; top: 1.5rem; right: 1.8rem;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 4rem;
+      font-weight: 300;
+      color: rgba(212,175,55,0.15);
+      line-height: 1;
+      transition: color 0.5s;
+    }
+    .portfolio-card:hover .portfolio-number { color: rgba(212,175,55,0.25); }
+
+    /* ── SERVICES STRIP ── */
+    #services { background: var(--charcoal-soft); }
+    .service-item {
+      border-bottom: 1px solid rgba(212,175,55,0.12);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 2rem 0;
+      transition: padding 0.4s;
+      cursor: none;
+    }
+    .service-item:first-child { border-top: 1px solid rgba(212,175,55,0.12); }
+    .service-item:hover { padding-left: 1.2rem; }
+    .service-num {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.85rem;
+      color: var(--gold);
+      opacity: 0.6;
+      min-width: 3rem;
+    }
+    .service-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.5rem, 3vw, 2.2rem);
+      font-weight: 300;
+      color: var(--off-white);
+      flex: 1;
+      padding: 0 2rem;
+      transition: color 0.3s;
+    }
+    .service-item:hover .service-name { color: var(--gold); }
+    .service-arrow {
+      width: 44px; height: 44px;
+      border: 1px solid rgba(212,175,55,0.25);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--gold);
+      transition: background 0.3s, transform 0.4s;
+      flex-shrink: 0;
+    }
+    .service-item:hover .service-arrow {
+      background: var(--gold);
+      color: var(--charcoal);
+      transform: rotate(45deg);
+    }
+
+    /* ── QUOTE STRIP ── */
+    #quote {
+      background: linear-gradient(135deg, #0d0d0d 0%, #111 50%, #0d0d0d 100%);
+      position: relative; overflow: hidden;
+    }
+    #quote::before {
+      content: '"';
+      position: absolute; top: -2rem; left: 3rem;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 25rem;
+      color: rgba(212,175,55,0.04);
+      line-height: 1;
+      pointer-events: none;
+    }
+    .quote-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.8rem, 4vw, 3.2rem);
+      font-weight: 300;
+      font-style: italic;
+      color: var(--off-white);
+      line-height: 1.4;
+      position: relative; z-index: 1;
+    }
+    .quote-text em { color: var(--gold); font-style: normal; }
+
+    /* ── CONTACT / FOOTER ── */
+    #contact {
+      background: #050505;
+      border-top: 1px solid rgba(212,175,55,0.1);
+    }
+    .contact-link {
+      display: flex; align-items: center; gap: 1rem;
+      color: rgba(240,237,232,0.55);
+      text-decoration: none;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      transition: color 0.3s;
+    }
+    .contact-link:hover { color: var(--gold); }
+    .contact-link svg { flex-shrink: 0; opacity: 0.5; transition: opacity 0.3s; }
+    .contact-link:hover svg { opacity: 1; }
+
+    .social-btn {
+      width: 46px; height: 46px;
+      border: 1px solid rgba(212,175,55,0.2);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(212,175,55,0.6);
+      text-decoration: none;
+      transition: all 0.4s;
+    }
+    .social-btn:hover {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--charcoal);
+      transform: translateY(-3px);
+    }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(212,175,55,0.08);
+      font-size: 0.55rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: rgba(240,237,232,0.2);
+    }
+    .footer-bottom a { color: rgba(212,175,55,0.4); text-decoration: none; transition: color 0.3s; }
+    .footer-bottom a:hover { color: var(--gold); }
+
+    /* ── GOLD RULE ── */
+    .gold-rule {
+      width: 100%; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+
+    /* ── MOBILE NAV ── */
+    @media (max-width: 768px) {
+      #header { padding: 1.5rem; }
+      #header.scrolled { padding: 1rem 1.5rem; }
+      .desktop-nav { display: none; }
+    }
+  </style>
+</head>
+
+<body x-data="site()" @mousemove="moveCursor($event)">
+
+  <!-- ── CURSORS ── -->
+  <div id="cursor-dot" :style="`left:${cx}px;top:${cy}px`"></div>
+  <div id="cursor-ring" :style="`left:${rx}px;top:${ry}px`"></div>
+
+  <!-- ── PRELOADER ── -->
+  <div id="preloader" :class="{ hide: preloaderHide }">
+    <div class="pre-logo" data-text="AURA">AURA</div>
+    <div class="pre-line"></div>
+    <p class="pre-sub">Memarlıq &amp; İnteryer Dizayn Studiyası</p>
+  </div>
+
+  <!-- ══════════════════════════════════════ HEADER ══════════════════════════════════════ -->
+  <header id="header" :class="{ scrolled: scrolled }">
+    <a href="#" class="logo-text">AUR<span>A</span></a>
+    <nav class="desktop-nav flex items-center gap-10">
+      <a href="#hero">Ana Səhifə</a>
+      <a href="#portfolio">Layihələr</a>
+      <a href="#about">Haqqımızda</a>
+      <a href="#contact">Əlaqə</a>
+    </nav>
+    <!-- mobile hamburger hint -->
+    <div class="md:hidden flex flex-col gap-1.5 cursor-none" @click="mobileMenu = !mobileMenu">
+      <span class="block w-6 h-px bg-gold-line transition-all" :class="mobileMenu ? 'rotate-45 translate-y-2' : ''" style="background:var(--gold)"></span>
+      <span class="block w-4 h-px bg-gold-line transition-all" :class="mobileMenu ? 'opacity-0' : ''" style="background:var(--gold)"></span>
+      <span class="block w-6 h-px bg-gold-line transition-all" :class="mobileMenu ? '-rotate-45 -translate-y-2' : ''" style="background:var(--gold)"></span>
+    </div>
+  </header>
+  <!-- mobile nav -->
+  <div class="fixed inset-0 z-90 flex flex-col items-center justify-center gap-8 transition-all duration-700"
+       :class="mobileMenu ? 'opacity-100 visible' : 'opacity-0 invisible'"
+       style="background:rgba(5,5,5,0.97); z-index:99;"
+       x-show="mobileMenu" x-transition.opacity>
+    <a href="#hero" @click="mobileMenu=false" class="font-cormorant text-4xl font-light text-off-white" style="font-family:'Cormorant Garamond',serif;color:var(--off-white);text-decoration:none">Ana Səhifə</a>
+    <a href="#portfolio" @click="mobileMenu=false" class="font-cormorant text-4xl font-light" style="font-family:'Cormorant Garamond',serif;color:var(--off-white);text-decoration:none">Layihələr</a>
+    <a href="#about" @click="mobileMenu=false" class="font-cormorant text-4xl font-light" style="font-family:'Cormorant Garamond',serif;color:var(--off-white);text-decoration:none">Haqqımızda</a>
+    <a href="#contact" @click="mobileMenu=false" class="font-cormorant text-4xl font-light" style="font-family:'Cormorant Garamond',serif;color:var(--off-white);text-decoration:none">Əlaqə</a>
+  </div>
+
+  <!-- ══════════════════════════════════════ HERO ══════════════════════════════════════ -->
+  <section id="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <span class="hero-eyebrow">Bakı &nbsp;·&nbsp; 2026</span>
+      <h1 class="hero-title">Məkanı<br/><em>Sənətə</em><br/>Çeviririk</h1>
+      <div class="hero-divider"></div>
+      <p class="hero-sub">Ultra-Premium Memarlıq &amp; İnteryer Həlləri</p>
+      <a href="#portfolio" class="btn-gold">Eksklüziv Layihələr</a>
+    </div>
+    <div class="scroll-indicator">
+      <span>Aşağı</span>
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ ABOUT ══════════════════════════════════════ -->
+  <section id="about" class="py-32 px-6 md:px-20">
+    <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-20 items-center">
+      <!-- text -->
+      <div>
+        <div class="section-label reveal from-left">Haqqımızda</div>
+        <h2 class="section-heading reveal" style="transition-delay:0.1s">
+          Hər Məkan —<br/><em>Bir Şah Əsər</em>
+        </h2>
+        <div class="gold-rule my-8 reveal" style="max-width:80px; transition-delay:0.2s"></div>
+        <p class="reveal text-sm leading-loose" style="color:rgba(240,237,232,0.6); font-weight:300; transition-delay:0.25s">
+          AURA Studio, memarlıq estetikası ilə daxili fəzanın sonsuz imkanlarını birləşdirən eksklüziv bir yaradıcılıq atelyesidir. Biz hər layihəyə müştərinin ruhunu, zövqünü və arzu etdiyi həyat tərzini əks etdirən unikal bir tablo kimi yanaşırıq.
+        </p>
+        <p class="reveal mt-5 text-sm leading-loose" style="color:rgba(240,237,232,0.6); font-weight:300; transition-delay:0.3s">
+          Dəqiqlik, incəlik və lüks — bizim üçün bu üç söz bir fəlsəfənin üç sütunudur. Materialların seçimindən işıqlandırma dizaynına, proporsiyaların balansından faktura oyunlarına qədər hər detal mükəmməllik uğrunda formalaşır.
+        </p>
+        <a href="#contact" class="btn-gold inline-block mt-10 reveal" style="transition-delay:0.4s">Əlaqə Qurun</a>
+      </div>
+      <!-- stats -->
+      <div class="grid grid-cols-2 gap-8">
+        <div class="about-stat reveal" style="transition-delay:0.15s">
+          <div class="stat-number">12+</div>
+          <div class="stat-label">İl Təcrübə</div>
+        </div>
+        <div class="about-stat reveal" style="transition-delay:0.2s">
+          <div class="stat-number">180</div>
+          <div class="stat-label">Tamamlanmış Layihə</div>
+        </div>
+        <div class="about-stat reveal" style="transition-delay:0.25s">
+          <div class="stat-number">6</div>
+          <div class="stat-label">Beynəlxalq Mükafat</div>
+        </div>
+        <div class="about-stat reveal" style="transition-delay:0.3s">
+          <div class="stat-number">100%</div>
+          <div class="stat-label">Müştəri Məmnuniyyəti</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ PORTFOLIO ══════════════════════════════════════ -->
+  <section id="portfolio" class="py-20 px-6 md:px-20">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+        <div>
+          <div class="section-label reveal from-left">Seçilmiş İşlər</div>
+          <h2 class="section-heading reveal" style="transition-delay:0.1s">Portfel<br/><em>Kolleksiyası</em></h2>
+        </div>
+        <p class="reveal text-xs leading-relaxed max-w-xs from-right" style="color:rgba(240,237,232,0.45);font-weight:300;letter-spacing:0.05em">
+          Hər layihə, məkanı estetik bir ifadəyə çevirmək üçün əlimizdəki bütün sənətkarlıqla hazırlanmışdır.
+        </p>
+      </div>
+
+      <!-- grid -->
+      <div class="grid md:grid-cols-2 gap-5">
+        <!-- Card 1 — large -->
+        <div class="portfolio-card h-96 md:h-auto md:row-span-2 reveal from-left" style="min-height:520px; transition-delay:0.05s">
+          <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80" alt="Modern Ultra-Villa" loading="lazy" />
+          <div class="portfolio-card-overlay">
+            <p class="card-cat">Memarlıq · Villa</p>
+            <h3 class="card-title">Modern<br/>Ultra-Villa</h3>
+            <div class="card-arrow">Ətraflı bax</div>
+          </div>
+          <span class="portfolio-number">01</span>
+        </div>
+        <!-- Card 2 -->
+        <div class="portfolio-card h-64 reveal" style="transition-delay:0.15s">
+          <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80" alt="Premium Minimalist Ofis" loading="lazy" />
+          <div class="portfolio-card-overlay">
+            <p class="card-cat">Korporativ · Ofis</p>
+            <h3 class="card-title">Premium<br/>Minimalist Ofis</h3>
+            <div class="card-arrow">Ətraflı bax</div>
+          </div>
+          <span class="portfolio-number">02</span>
+        </div>
+        <!-- Card 3 -->
+        <div class="portfolio-card h-64 reveal from-right" style="transition-delay:0.25s">
+          <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=80" alt="Lüks Penthaus" loading="lazy" />
+          <div class="portfolio-card-overlay">
+            <p class="card-cat">Rezidensiya · Penthaus</p>
+            <h3 class="card-title">Lüks<br/>Penthaus</h3>
+            <div class="card-arrow">Ətraflı bax</div>
+          </div>
+          <span class="portfolio-number">03</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ SERVICES ══════════════════════════════════════ -->
+  <section id="services" class="py-28 px-6 md:px-20">
+    <div class="max-w-6xl mx-auto">
+      <div class="section-label reveal from-left">Xidmətlər</div>
+      <h2 class="section-heading mb-16 reveal" style="transition-delay:0.1s">Nə <em>Edirik</em></h2>
+      <div>
+        <div class="service-item reveal" style="transition-delay:0.05s">
+          <span class="service-num">01</span>
+          <span class="service-name">Memarlıq Dizaynı</span>
+          <div class="service-arrow">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+        <div class="service-item reveal" style="transition-delay:0.1s">
+          <span class="service-num">02</span>
+          <span class="service-name">İnteryer Dizayn</span>
+          <div class="service-arrow">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+        <div class="service-item reveal" style="transition-delay:0.15s">
+          <span class="service-num">03</span>
+          <span class="service-name">3D Vizuallaşdırma</span>
+          <div class="service-arrow">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+        <div class="service-item reveal" style="transition-delay:0.2s">
+          <span class="service-num">04</span>
+          <span class="service-name">Məkan Planlaması</span>
+          <div class="service-arrow">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+        <div class="service-item reveal" style="transition-delay:0.25s">
+          <span class="service-num">05</span>
+          <span class="service-name">Mebel &amp; Material Seçimi</span>
+          <div class="service-arrow">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ QUOTE ══════════════════════════════════════ -->
+  <section id="quote" class="py-32 px-6 md:px-20">
+    <div class="max-w-4xl mx-auto text-center">
+      <p class="quote-text reveal">
+        "Gözəl bir məkan — yalnız <em>görmə</em> hissi ilə deyil,<br/>bütün varlığınızla <em>hiss etdiyiniz</em> bir əsərdir."
+      </p>
+      <div class="gold-rule mx-auto mt-10 reveal" style="max-width:100px; transition-delay:0.2s"></div>
+      <p class="mt-5 text-xs tracking-widest reveal" style="color:rgba(212,175,55,0.5); transition-delay:0.3s">— AURA STUDIO</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ CONTACT / FOOTER ══════════════════════════════════════ -->
+  <section id="contact" class="pt-28 pb-0">
+    <div class="max-w-6xl mx-auto px-6 md:px-20">
+      <div class="grid md:grid-cols-2 gap-20 pb-24">
+        <!-- left -->
+        <div>
+          <div class="section-label reveal from-left">Əlaqə</div>
+          <h2 class="section-heading reveal" style="transition-delay:0.1s">
+            Layihənizi<br/><em>Birlikdə</em><br/>Yaradaq
+          </h2>
+          <div class="gold-rule my-8 reveal" style="max-width:60px; transition-delay:0.2s"></div>
+          <p class="reveal text-sm leading-loose" style="color:rgba(240,237,232,0.5);font-weight:300;transition-delay:0.25s">
+            Hər böyük vizion bir söhbətdən başlayır.<br/>Bizimlə əlaqə qurun, xəyallarınızı reallığa çevirək.
+          </p>
+          <!-- social -->
+          <div class="flex gap-4 mt-10 reveal" style="transition-delay:0.35s">
+            <a href="https://www.instagram.com/getsite.az?igsh=Ym5wZzV3aWk4NDd4" target="_blank" class="social-btn" title="Instagram">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+            </a>
+            <a href="https://www.tiktok.com/@getsite.az?_r=1&_t=ZS-96vgu5coUci" target="_blank" class="social-btn" title="TikTok">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.28 6.28 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.75a8.16 8.16 0 0 0 4.78 1.53V6.84a4.85 4.85 0 0 1-1.01-.15z"/></svg>
+            </a>
+          </div>
+        </div>
+        <!-- right -->
+        <div class="flex flex-col justify-center gap-8">
+          <a href="mailto:getsite.az@outlook.com" class="contact-link reveal" style="transition-delay:0.1s">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg>
+            getsite.az@outlook.com
+          </a>
+          <a href="tel:+994997199929" class="contact-link reveal" style="transition-delay:0.2s">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            +994 99 719 99 29
+          </a>
+          <a href="https://www.instagram.com/getsite.az?igsh=Ym5wZzV3aWk4NDd4" target="_blank" class="contact-link reveal" style="transition-delay:0.3s">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+            @getsite.az
+          </a>
+          <a href="https://www.tiktok.com/@getsite.az?_r=1&_t=ZS-96vgu5coUci" target="_blank" class="contact-link reveal" style="transition-delay:0.4s">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="opacity:0.5"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.28 6.28 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.75a8.16 8.16 0 0 0 4.78 1.53V6.84a4.85 4.85 0 0 1-1.01-.15z"/></svg>
+            @getsite.az
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- footer bottom -->
+    <div class="footer-bottom px-6 md:px-20 py-6 flex flex-col md:flex-row items-center justify-between gap-3">
+      <span>© 2026 AURA Studio. Powered by <a href="https://getsite.az" target="_blank">GetSite.az</a></span>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:rgba(212,175,55,0.2);letter-spacing:0.3em">AURA</span>
+      <span>Bütün hüquqlar qorunur</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ ALPINE JS ══════════════════════════════════════ -->
+  <script>
+    function site() {
+      return {
+        cx: 0, cy: 0,
+        rx: 0, ry: 0,
+        scrolled: false,
+        preloaderHide: false,
+        mobileMenu: false,
+
+        init() {
+          // Hide preloader after 3s
+          setTimeout(() => { this.preloaderHide = true; }, 3000);
+
+          // Scroll header
+          window.addEventListener('scroll', () => {
+            this.scrolled = window.scrollY > 60;
+          });
+
+          // Reveal on scroll
+          this.$nextTick(() => {
+            this.setupReveal();
+          });
+        },
+
+        moveCursor(e) {
+          this.cx = e.clientX;
+          this.cy = e.clientY;
+          // ring lags slightly for fluid feel
+          setTimeout(() => {
+            this.rx = e.clientX;
+            this.ry = e.clientY;
+          }, 60);
+        },
+
+        setupReveal() {
+          const els = document.querySelectorAll('.reveal');
+          const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                observer.unobserve(entry.target);
+              }
+            });
+          }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+          els.forEach(el => observer.observe(el));
+        }
+      }
+    }
+  </script>
+</body>
+</html>
